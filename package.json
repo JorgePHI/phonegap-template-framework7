@@ -1,13 +1,15 @@
 {
-  "name": "phonegap-template-framework7",
+  "name": "phonegap-template-framework7-v367",
   "version": "1.1.0",
   "description": "A starter template for building PhoneGap apps with Framework7.",
   "main": "index.js",
+
+  
   "repository": {
     "type": "git",
-    "url": "https://github.com/phonegap/phonegap-template-framework7.git"
+    "url": "https://github.com/JorgePHI/phonegap-template-framework7-v367.git"
   },
-  "author": "PhoneGap Team",
+  "author": "Jorge Montenegro",
   "license": "Apache-2.0.0",
   "keywords": [
     "ecosystem:phonegap",
@@ -16,7 +18,7 @@
     "phonegap:template"
   ],
   "bugs": {
-    "url": "https://github.com/phonegap/phonegap-template-framework7/issues"
+    "url": "https://github.com/JorgePHI/phonegap-template-framework7-v367/issues"
   },
-  "homepage": "https://github.com/phonegap/phonegap-template-framework7"
+  "homepage": "https://github.com/JorgePHI/phonegap-template-framework7-v367"
 }
