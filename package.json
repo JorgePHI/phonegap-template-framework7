@@ -3,8 +3,9 @@
   "version": "1.1.0",
   "description": "A starter template for building PhoneGap apps with Framework7.",
   "main": "index.js",
-
-  
+  "scripts": {
+    "prepublish": "npm run test"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/JorgePHI/phonegap-template-framework7-v367.git"
@@ -20,5 +21,9 @@
   "bugs": {
     "url": "https://github.com/JorgePHI/phonegap-template-framework7-v367/issues"
   },
-  "homepage": "https://github.com/JorgePHI/phonegap-template-framework7-v367"
+  "homepage": "https://github.com/JorgePHI/phonegap-template-framework7-v367",
+  "dependencies": {
+    "basic": "^2.0.3",
+    "npm": "^6.8.0"
+  }
 }
