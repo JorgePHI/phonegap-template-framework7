@@ -8,6 +8,7 @@ class Range extends Framework7Class {
     super(params, [app]);
 
     const range = this;
+
     const defaults = {
       el: null,
       inputEl: null,
@@ -18,6 +19,7 @@ class Range extends Framework7Class {
       max: 100,
       value: 0,
       draggableBar: true,
+      formatLabel: null,
     };
 
     // Extend defaults with modules params
@@ -273,6 +275,9 @@ class Range extends Framework7Class {
       range.calcSize();
       range.layout();
     }
+    let parentModals;
+    let parentPanel;
+    let parentPage;
     range.attachEvents = function attachEvents() {
       const passive = Support.passiveListener ? { passive: true } : false;
       range.$el.on(app.touchEvents.start, handleTouchStart, passive);
@@ -280,12 +285,12 @@ class Range extends Framework7Class {
       app.on('touchend:passive', handleTouchEnd);
       app.on('tabShow', handleResize);
       app.on('resize', handleResize);
-      range.$el
-        .parents('.sheet-modal, .actions-modal, .popup, .popover, .login-screen, .dialog, .toast')
-        .on('modal:open', handleResize);
-      range.$el
-        .parents('.panel')
-        .on('panel:open', handleResize);
+      parentModals = range.$el.parents('.sheet-modal, .actions-modal, .popup, .popover, .login-screen, .dialog, .toast');
+      parentModals.on('modal:open', handleResize);
+      parentPanel = range.$el.parents('.panel');
+      parentPanel.on('panel:open', handleResize);
+      parentPage = range.$el.parents('.page').eq(0);
+      parentPage.on('page:reinit', handleResize);
     };
     range.detachEvents = function detachEvents() {
       const passive = Support.passiveListener ? { passive: true } : false;
@@ -294,12 +299,18 @@ class Range extends Framework7Class {
       app.off('touchend:passive', handleTouchEnd);
       app.off('tabShow', handleResize);
       app.off('resize', handleResize);
-      range.$el
-        .parents('.sheet-modal, .actions-modal, .popup, .popover, .login-screen, .dialog, .toast')
-        .off('modal:open', handleResize);
-      range.$el
-        .parents('.panel')
-        .off('panel:open', handleResize);
+      if (parentModals) {
+        parentModals.off('modal:open', handleResize);
+      }
+      if (parentPanel) {
+        parentPanel.off('panel:open', handleResize);
+      }
+      if (parentPage) {
+        parentPage.off('page:reinit', handleResize);
+      }
+      parentModals = null;
+      parentPanel = null;
+      parentPage = null;
     };
 
     // Install Modules
@@ -346,7 +357,7 @@ class Range extends Framework7Class {
         if (realLeft < 0) leftPos = knobWidth / 2;
         if ((realLeft + knobWidth) > rangeWidth) leftPos = rangeWidth - (knobWidth / 2);
         $knobEl.css(positionProperty, `${leftPos}px`);
-        if (label) labels[knobIndex].text(value[knobIndex]);
+        if (label) labels[knobIndex].text(range.formatLabel(value[knobIndex], labels[knobIndex][0]));
       });
     } else {
       const progress = ((value - min) / (max - min));
@@ -357,7 +368,7 @@ class Range extends Framework7Class {
       if (realLeft < 0) leftPos = knobWidth / 2;
       if ((realLeft + knobWidth) > rangeWidth) leftPos = rangeWidth - (knobWidth / 2);
       knobs[0].css(positionProperty, `${leftPos}px`);
-      if (label) labels[0].text(value);
+      if (label) labels[0].text(range.formatLabel(value, labels[0][0]));
     }
     if ((range.dual && value.indexOf(min) >= 0) || (!range.dual && value === min)) {
       range.$el.addClass('range-slider-min');
@@ -424,6 +435,12 @@ class Range extends Framework7Class {
 
   getValue() {
     return this.value;
+  }
+
+  formatLabel(value, labelEl) {
+    const range = this;
+    if (range.params.formatLabel) return range.params.formatLabel.call(range, value, labelEl);
+    return value;
   }
 
   init() {

@@ -1,35 +1,36 @@
 /**
- * Framework7 3.5.2
+ * Framework7 3.6.7
  * Full featured mobile HTML framework for building iOS & Android apps
  * http://framework7.io/
  *
- * Copyright 2014-2018 Vladimir Kharlampidi
+ * Copyright 2014-2019 Vladimir Kharlampidi
  *
  * Released under the MIT License
  *
- * Released on: November 12, 2018
+ * Released on: February 13, 2019
  */
 
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
-  (global.Framework7 = factory());
-}(this, (function () { 'use strict';
+  (global = global || self, global.Framework7 = factory());
+}(this, function () { 'use strict';
 
   /**
-   * Template7 1.4.0
+   * Template7 1.4.1
    * Mobile-first HTML template engine
    * 
    * http://www.idangero.us/template7/
    * 
-   * Copyright 2018, Vladimir Kharlampidi
+   * Copyright 2019, Vladimir Kharlampidi
    * The iDangero.us
    * http://www.idangero.us/
    * 
    * Licensed under MIT
    * 
-   * Released on: August 31, 2018
+   * Released on: February 5, 2019
    */
+
   var t7ctx;
   if (typeof window !== 'undefined') {
     t7ctx = window;
@@ -48,13 +49,14 @@
       return typeof func === 'function';
     },
     escape: function escape(string) {
-      return (typeof Template7Context !== 'undefined' && Template7Context.escape) ?
-        Template7Context.escape(string) :
-        string
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;');
+      if ( string === void 0 ) string = '';
+
+      return string
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
     },
     helperToSlices: function helperToSlices(string) {
       var quoteDoubleRexExp = Template7Utils.quoteDoubleRexExp;
@@ -238,9 +240,19 @@
       return blocks;
     },
     parseJsVariable: function parseJsVariable(expression, replace, object) {
-      return expression.split(/([+ \-*/^])/g).map(function (part) {
-        if (part.indexOf(replace) < 0) { return part; }
-        if (!object) { return JSON.stringify(''); }
+      return expression.split(/([+ \-*/^()&=|<>!%:?])/g).reduce(function (arr, part) {
+        if (!part) {
+          return arr;
+        }
+        if (part.indexOf(replace) < 0) {
+          arr.push(part);
+          return arr;
+        }
+        if (!object) {
+          arr.push(JSON.stringify(''));
+          return arr;
+        }
+
         var variable = object;
         if (part.indexOf((replace + ".")) >= 0) {
           part.split((replace + "."))[1].split('.').forEach(function (partName) {
@@ -252,24 +264,47 @@
           variable = JSON.stringify(variable);
         }
         if (variable === undefined) { variable = 'undefined'; }
-        return variable;
-      }).join('');
+
+        arr.push(variable);
+        return arr;
+      }, []).join('');
     },
     parseJsParents: function parseJsParents(expression, parents) {
-      return expression.split(/([+ \-*^])/g).map(function (part) {
-        if (part.indexOf('../') < 0) { return part; }
-        if (!parents || parents.length === 0) { return JSON.stringify(''); }
+      return expression.split(/([+ \-*^()&=|<>!%:?])/g).reduce(function (arr, part) {
+        if (!part) {
+          return arr;
+        }
+
+        if (part.indexOf('../') < 0) {
+          arr.push(part);
+          return arr;
+        }
+
+        if (!parents || parents.length === 0) {
+          arr.push(JSON.stringify(''));
+          return arr;
+        }
+
         var levelsUp = part.split('../').length - 1;
         var parentData = levelsUp > parents.length ? parents[parents.length - 1] : parents[levelsUp - 1];
 
         var variable = parentData;
         var parentPart = part.replace(/..\//g, '');
         parentPart.split('.').forEach(function (partName) {
-          if (variable[partName]) { variable = variable[partName]; }
+          if (typeof variable[partName] !== 'undefined') { variable = variable[partName]; }
           else { variable = 'undefined'; }
         });
-        return JSON.stringify(variable);
-      }).join('');
+        if (variable === false || variable === true) {
+          arr.push(JSON.stringify(variable));
+          return arr;
+        }
+        if (variable === null || variable === 'undefined') {
+          arr.push(JSON.stringify(''));
+          return arr;
+        }
+        arr.push(JSON.stringify(variable));
+        return arr;
+      }, []).join('');
     },
     getCompileVar: function getCompileVar(name, ctx, data) {
       if ( data === void 0 ) data = 'data_1';
@@ -329,6 +364,7 @@
   };
 
   /* eslint no-eval: "off" */
+
   var Template7Helpers = {
     _partial: function _partial(partialName, options) {
       var ctx = this;
@@ -703,17 +739,17 @@
   } : window; // eslint-disable-line
 
   /**
-   * Dom7 2.1.2
+   * Dom7 2.1.3
    * Minimalistic JavaScript library for DOM manipulation, with a jQuery-compatible API
    * http://framework7.io/docs/dom.html
    *
-   * Copyright 2018, Vladimir Kharlampidi
+   * Copyright 2019, Vladimir Kharlampidi
    * The iDangero.us
    * http://www.idangero.us/
    *
    * Licensed under MIT
    *
-   * Released on: September 13, 2018
+   * Released on: February 11, 2019
    */
 
   var Dom7 = function Dom7(arr) {
@@ -1107,6 +1143,9 @@
             if (listener && handler.listener === listener) {
               el.removeEventListener(event, handler.proxyListener, capture);
               handlers.splice(k, 1);
+            } else if (listener && handler.listener && handler.listener.dom7proxy && handler.listener.dom7proxy === listener) {
+              el.removeEventListener(event, handler.proxyListener, capture);
+              handlers.splice(k, 1);
             } else if (!listener) {
               el.removeEventListener(event, handler.proxyListener, capture);
               handlers.splice(k, 1);
@@ -1131,14 +1170,18 @@
       (assign = args, eventName = assign[0], listener = assign[1], capture = assign[2]);
       targetSelector = undefined;
     }
-    function proxy() {
+    function onceHandler() {
       var eventArgs = [], len = arguments.length;
       while ( len-- ) eventArgs[ len ] = arguments[ len ];
 
       listener.apply(this, eventArgs);
-      dom.off(eventName, targetSelector, proxy, capture);
+      dom.off(eventName, targetSelector, onceHandler, capture);
+      if (onceHandler.dom7proxy) {
+        delete onceHandler.dom7proxy;
+      }
     }
-    return dom.on(eventName, targetSelector, proxy, capture);
+    onceHandler.dom7proxy = listener;
+    return dom.on(eventName, targetSelector, onceHandler, capture);
   }
   function trigger() {
     var args = [], len = arguments.length;
@@ -1483,7 +1526,7 @@
 
     return this;
   }
-   // eslint-disable-next-line
+  // eslint-disable-next-line
   function appendTo(parent) {
     $(parent).append(this);
     return this;
@@ -1508,7 +1551,7 @@
     }
     return this;
   }
-   // eslint-disable-next-line
+  // eslint-disable-next-line
   function prependTo(parent) {
     $(parent).prepend(this);
     return this;
@@ -2834,7 +2877,7 @@
     // Windows
     if (windowsPhone) {
       device.os = 'windows';
-      device.osVersion = windows[2];
+      device.osVersion = windowsPhone[2];
       device.windowsPhone = true;
     }
     // Android
@@ -2952,7 +2995,11 @@
 
       handler.apply(self, args);
       self.off(events, onceHandler);
+      if (onceHandler.f7proxy) {
+        delete onceHandler.f7proxy;
+      }
     }
+    onceHandler.f7proxy = handler;
     return self.on(events, onceHandler, priority);
   };
 
@@ -2964,7 +3011,7 @@
         self.eventsListeners[event] = [];
       } else if (self.eventsListeners[event]) {
         self.eventsListeners[event].forEach(function (eventHandler, index) {
-          if (eventHandler === handler) {
+          if (eventHandler === handler || (eventHandler.f7proxy && eventHandler.f7proxy === handler)) {
             self.eventsListeners[event].splice(index, 1);
           }
         });
@@ -3434,6 +3481,9 @@
       // Install Modules
       app.useModules();
 
+      // Init Data & Methods
+      app.initData();
+
       // Init
       if (app.params.init) {
         if (Device.cordova && app.params.initOnDeviceReady) {
@@ -3455,22 +3505,8 @@
     var prototypeAccessors = { $: { configurable: true },t7: { configurable: true } };
     var staticAccessors = { Dom7: { configurable: true },$: { configurable: true },Template7: { configurable: true },Class: { configurable: true } };
 
-    Framework7.prototype.init = function init () {
+    Framework7.prototype.initData = function initData () {
       var app = this;
-      if (app.initialized) { return app; }
-
-      app.root.addClass('framework7-initializing');
-
-      // RTL attr
-      if (app.rtl) {
-        $('html').attr('dir', 'rtl');
-      }
-
-      // Root class
-      app.root.addClass('framework7-root');
-
-      // Theme class
-      $('html').removeClass('ios md').addClass(app.theme);
 
       // Data
       app.data = {};
@@ -3490,6 +3526,25 @@
           }
         });
       }
+    };
+
+    Framework7.prototype.init = function init () {
+      var app = this;
+      if (app.initialized) { return app; }
+
+      app.root.addClass('framework7-initializing');
+
+      // RTL attr
+      if (app.rtl) {
+        $('html').attr('dir', 'rtl');
+      }
+
+      // Root class
+      app.root.addClass('framework7-root');
+
+      // Theme class
+      $('html').removeClass('ios md').addClass(app.theme);
+
       // Init class
       Utils.nextFrame(function () {
         app.root.removeClass('framework7-initializing');
@@ -3632,7 +3687,7 @@
     return {
       positionSticky: positionSticky,
       touch: (function checkTouch() {
-        return !!(('ontouchstart' in win) || (win.DocumentTouch && doc instanceof win.DocumentTouch));
+        return !!((win.navigator.maxTouchPoints > 0) || ('ontouchstart' in win) || (win.DocumentTouch && doc instanceof win.DocumentTouch));
       }()),
 
       pointerEvents: !!(win.navigator.pointerEnabled || win.PointerEvent || ('maxTouchPoints' in win.navigator)),
@@ -4502,6 +4557,10 @@
             e.preventDefault();
           }
         }
+        if (params.activeState) { removeActive(); }
+        if (useRipple) {
+          rippleTouchEnd();
+        }
         return true;
       }
 
@@ -4519,6 +4578,9 @@
 
       if ((touchEndTime - lastClickTime) < params.fastClicksDelayBetweenClicks) {
         setTimeout(removeActive, 0);
+        if (useRipple) {
+          rippleTouchEnd();
+        }
         return true;
       }
 
@@ -4764,7 +4826,6 @@
    * Default configs.
    */
   var DEFAULT_DELIMITER = '/';
-  var DEFAULT_DELIMITERS = './';
 
   /**
    * The main path matching regexp utility.
@@ -4796,7 +4857,7 @@
     var index = 0;
     var path = '';
     var defaultDelimiter = (options && options.delimiter) || DEFAULT_DELIMITER;
-    var delimiters = (options && options.delimiters) || DEFAULT_DELIMITERS;
+    var whitelist = (options && options.whitelist) || undefined;
     var pathEscaped = false;
     var res;
 
@@ -4815,7 +4876,6 @@
       }
 
       var prev = '';
-      var next = str[index];
       var name = res[2];
       var capture = res[3];
       var group = res[4];
@@ -4823,9 +4883,11 @@
 
       if (!pathEscaped && path.length) {
         var k = path.length - 1;
+        var c = path[k];
+        var matches = whitelist ? whitelist.indexOf(c) > -1 : true;
 
-        if (delimiters.indexOf(path[k]) > -1) {
-          prev = path[k];
+        if (matches) {
+          prev = c;
           path = path.slice(0, k);
         }
       }
@@ -4837,11 +4899,10 @@
         pathEscaped = false;
       }
 
-      var partial = prev !== '' && next !== undefined && next !== prev;
       var repeat = modifier === '+' || modifier === '*';
       var optional = modifier === '?' || modifier === '*';
-      var delimiter = prev || defaultDelimiter;
       var pattern = capture || group;
+      var delimiter = prev || defaultDelimiter;
 
       tokens.push({
         name: name || key++,
@@ -4849,8 +4910,9 @@
         delimiter: delimiter,
         optional: optional,
         repeat: repeat,
-        partial: partial,
-        pattern: pattern ? escapeGroup(pattern) : '[^' + escapeString(delimiter) + ']+?'
+        pattern: pattern
+          ? escapeGroup(pattern)
+          : '[^' + escapeString(delimiter === defaultDelimiter ? delimiter : (delimiter + defaultDelimiter)) + ']+?'
       });
     }
 
@@ -4937,12 +4999,7 @@
           continue
         }
 
-        if (token.optional) {
-          // Prepend partial segment prefixes.
-          if (token.partial) { path += token.prefix; }
-
-          continue
-        }
+        if (token.optional) { continue }
 
         throw new TypeError('Expected "' + token.name + '" to be ' + (token.repeat ? 'an array' : 'a string'))
       }
@@ -5002,7 +5059,6 @@
           delimiter: null,
           optional: false,
           repeat: false,
-          partial: false,
           pattern: null
         });
       }
@@ -5055,11 +5111,9 @@
     var strict = options.strict;
     var start = options.start !== false;
     var end = options.end !== false;
-    var delimiter = escapeString(options.delimiter || DEFAULT_DELIMITER);
-    var delimiters = options.delimiters || DEFAULT_DELIMITERS;
+    var delimiter = options.delimiter || DEFAULT_DELIMITER;
     var endsWith = [].concat(options.endsWith || []).map(escapeString).concat('$').join('|');
     var route = start ? '^' : '';
-    var isEndDelimited = tokens.length === 0;
 
     // Iterate over the tokens and create our regexp string.
     for (var i = 0; i < tokens.length; i++) {
@@ -5067,7 +5121,6 @@
 
       if (typeof token === 'string') {
         route += escapeString(token);
-        isEndDelimited = i === tokens.length - 1 && delimiters.indexOf(token[token.length - 1]) > -1;
       } else {
         var capture = token.repeat
           ? '(?:' + token.pattern + ')(?:' + escapeString(token.delimiter) + '(?:' + token.pattern + '))*'
@@ -5076,8 +5129,8 @@
         if (keys) { keys.push(token); }
 
         if (token.optional) {
-          if (token.partial) {
-            route += escapeString(token.prefix) + '(' + capture + ')?';
+          if (!token.prefix) {
+            route += '(' + capture + ')?';
           } else {
             route += '(?:' + escapeString(token.prefix) + '(' + capture + '))?';
           }
@@ -5088,12 +5141,17 @@
     }
 
     if (end) {
-      if (!strict) { route += '(?:' + delimiter + ')?'; }
+      if (!strict) { route += '(?:' + escapeString(delimiter) + ')?'; }
 
       route += endsWith === '$' ? '$' : '(?=' + endsWith + ')';
     } else {
-      if (!strict) { route += '(?:' + delimiter + '(?=' + endsWith + '))?'; }
-      if (!isEndDelimited) { route += '(?=' + delimiter + '|' + endsWith + ')'; }
+      var endToken = tokens[tokens.length - 1];
+      var isEndDelimited = typeof endToken === 'string'
+        ? endToken[endToken.length - 1] === delimiter
+        : endToken === undefined;
+
+      if (!strict) { route += '(?:' + escapeString(delimiter) + '(?=' + endsWith + '))?'; }
+      if (!isEndDelimited) { route += '(?=' + escapeString(delimiter) + '|' + endsWith + ')'; }
     }
 
     return new RegExp(route, flags(options))
@@ -5778,8 +5836,15 @@
     leaveCurrentRoute();
   }
 
+  function appRouterCheck (router, method) {
+    if (!router.view) {
+      throw new Error(("Framework7: it is not allowed to use router methods on global app router. Use router methods only on related View, e.g. app.views.main.router." + method + "(...)"));
+    }
+  }
+
   function refreshPage() {
     var router = this;
+    appRouterCheck(router, 'refreshPage');
     return router.navigate(router.currentRoute.url, {
       ignoreCache: true,
       reloadCurrent: true,
@@ -5790,9 +5855,9 @@
     if ( forwardOptions === void 0 ) forwardOptions = {};
 
     var router = this;
+    var $el = $(el);
     var app = router.app;
     var view = router.view;
-
     var options = Utils.extend(false, {
       animate: router.params.animate,
       pushState: true,
@@ -5841,13 +5906,19 @@
     var separateNavbar = router.separateNavbar;
 
     var $viewEl = router.$el;
-    var $newPage = $(el);
+    var $newPage = $el;
     var reload = options.reloadPrevious || options.reloadCurrent || options.reloadAll;
     var $oldPage;
 
     var $navbarEl;
     var $newNavbarInner;
     var $oldNavbarInner;
+
+    router.allowPageChange = false;
+    if ($newPage.length === 0) {
+      router.allowPageChange = true;
+      return router;
+    }
 
     if ($newPage.length) {
       // Remove theme elements
@@ -5868,10 +5939,11 @@
       }
     }
 
-    router.allowPageChange = false;
-    if ($newPage.length === 0) {
-      router.allowPageChange = true;
-      return router;
+    // Save Keep Alive Cache
+    if (options.route && options.route.route && options.route.route.keepAlive && !options.route.route.keepAliveData) {
+      options.route.route.keepAliveData = {
+        pageEl: $el[0],
+      };
     }
 
     // Pages In View
@@ -6045,6 +6117,9 @@
       }
     }
     if (!newPageInDom) {
+      router.pageCallback('mounted', $newPage, $newNavbarInner, newPagePosition, reload ? newPagePosition : 'current', options, $oldPage);
+    } else if (options.route && options.route.route && options.route.route.keepAlive && !$newPage[0].f7PageMounted) {
+      $newPage[0].f7PageMounted = true;
       router.pageCallback('mounted', $newPage, $newNavbarInner, newPagePosition, reload ? newPagePosition : 'current', options, $oldPage);
     }
 
@@ -6353,12 +6428,7 @@
       throw new Error(("Framework7: can't construct URL for route with name \"" + name + "\""));
     }
     var app = router.app;
-    if (!router.view) {
-      if (app.views.main) {
-        app.views.main.router.navigate(url, navigateOptions);
-      }
-      return router;
-    }
+    appRouterCheck(router, 'navigate');
     if (url === '#' || url === '') {
       return router;
     }
@@ -6389,10 +6459,11 @@
 
     var options = {};
     if (route.route.options) {
-      Utils.extend(options, route.route.options, navigateOptions, { route: route });
+      Utils.extend(options, route.route.options, navigateOptions);
     } else {
-      Utils.extend(options, navigateOptions, { route: route });
+      Utils.extend(options, navigateOptions);
     }
+    options.route = route;
 
     if (options && options.context) {
       route.context = options.context;
@@ -6407,12 +6478,16 @@
           router.modalLoad(modalLoadProp, route, options);
         }
       });
+      if (route.route.keepAlive && route.route.keepAliveData) {
+        router.load({ el: route.route.keepAliveData.pageEl }, options, false);
+        routerLoaded = true;
+      }
       ('url content component pageName el componentUrl template templateUrl').split(' ').forEach(function (pageLoadProp) {
         var obj;
 
         if (route.route[pageLoadProp] && !routerLoaded) {
           routerLoaded = true;
-          router.load(( obj = {}, obj[pageLoadProp] = route.route[pageLoadProp], obj ), options);
+          router.load(( obj = {}, obj[pageLoadProp] = route.route[pageLoadProp], obj ), options, false);
         }
       });
       if (routerLoaded) { return; }
@@ -6660,10 +6735,12 @@
       }
     }
 
+    var hasContentLoadProp;
     ('url content component el componentUrl template templateUrl').split(' ').forEach(function (tabLoadProp) {
       var obj;
 
       if (tabRoute[tabLoadProp]) {
+        hasContentLoadProp = true;
         loadTab(( obj = {}, obj[tabLoadProp] = tabRoute[tabLoadProp], obj ), options);
       }
     });
@@ -6677,6 +6754,8 @@
     }
     if (tabRoute.async) {
       tabRoute.async.call(router, currentRoute, previousRoute, asyncResolve, asyncReject);
+    } else if (!hasContentLoadProp) {
+      router.allowPageChange = true;
     }
 
     return router;
@@ -6904,6 +6983,7 @@
 
   function backward(el, backwardOptions) {
     var router = this;
+    var $el = $(el);
     var app = router.app;
     var view = router.view;
 
@@ -6915,7 +6995,7 @@
     var dynamicNavbar = router.dynamicNavbar;
     var separateNavbar = router.separateNavbar;
 
-    var $newPage = $(el);
+    var $newPage = $el;
     var $oldPage = router.$el.children('.page-current');
 
     if ($newPage.length) {
@@ -6953,6 +7033,13 @@
     // Remove theme elements
     router.removeThemeElements($newPage);
 
+    // Save Keep Alive Cache
+    if (options.route && options.route.route && options.route.route.keepAlive && !options.route.route.keepAliveData) {
+      options.route.route.keepAliveData = {
+        pageEl: $el[0],
+      };
+    }
+
     // New Page
     $newPage
       .addClass('page-previous')
@@ -6967,7 +7054,6 @@
         .removeClass('stacked')
         .removeAttr('aria-hidden');
     }
-
 
     // Remove previous page in case of "forced"
     var backIndex;
@@ -7055,6 +7141,9 @@
         }
       }
       if (!newPageInDom) {
+        router.pageCallback('mounted', $newPage, $newNavbarInner, 'previous', 'current', options, $oldPage);
+      } else if (options.route && options.route.route && options.route.route.keepAlive && !$newPage[0].f7PageMounted) {
+        $newPage[0].f7PageMounted = true;
         router.pageCallback('mounted', $newPage, $newNavbarInner, 'previous', 'current', options, $oldPage);
       }
     }
@@ -7300,10 +7389,9 @@
     return router;
   }
   function back() {
-    var ref;
-
     var args = [], len = arguments.length;
     while ( len-- ) args[ len ] = arguments[ len ];
+
     var router = this;
     if (router.swipeBackActive) { return router; }
     var navigateUrl;
@@ -7337,10 +7425,7 @@
     }
 
     var app = router.app;
-    if (!router.view) {
-      (ref = app.views.main.router).back.apply(ref, args);
-      return router;
-    }
+    appRouterCheck(router, 'back');
 
     var currentRouteIsModal = router.currentRoute.modal;
     var modalType;
@@ -7380,16 +7465,29 @@
           },
         };
       }
-      if (!previousRoute || !modalToClose) {
-        return router;
+      if (!navigateUrl || navigateUrl.replace(/[# ]/g, '').trim().length === 0) {
+        if (!previousRoute || !modalToClose) {
+          return router;
+        }
       }
-      if (router.params.pushState && navigateOptions.pushState !== false) {
-        History.back();
+      var forceOtherUrl = navigateOptions.force && previousRoute && navigateUrl;
+      if (previousRoute && modalToClose) {
+        if (router.params.pushState && navigateOptions.pushState !== false) {
+          History.back();
+        }
+        router.currentRoute = previousRoute;
+        router.history.pop();
+        router.saveHistory();
+        router.modalRemove(modalToClose);
+        if (forceOtherUrl) {
+          router.navigate(navigateUrl, { reloadCurrent: true });
+        }
+      } else if (modalToClose) {
+        router.modalRemove(modalToClose);
+        if (navigateUrl) {
+          router.navigate(navigateUrl, { reloadCurrent: true });
+        }
       }
-      router.currentRoute = previousRoute;
-      router.history.pop();
-      router.saveHistory();
-      router.modalRemove(modalToClose);
       return router;
     }
     var $previousPage = router.$el.children('.page-current').prevAll('.page-previous').eq(0);
@@ -7457,10 +7555,11 @@
 
     var options = {};
     if (route.route.options) {
-      Utils.extend(options, route.route.options, navigateOptions, { route: route });
+      Utils.extend(options, route.route.options, navigateOptions);
     } else {
-      Utils.extend(options, navigateOptions, { route: route });
+      Utils.extend(options, navigateOptions);
     }
+    options.route = route;
 
     if (options && options.context) {
       route.context = options.context;
@@ -7481,6 +7580,10 @@
     }
     function resolve() {
       var routerLoaded = false;
+      if (route.route.keepAlive && route.route.keepAliveData) {
+        router.loadBack({ el: route.route.keepAliveData.pageEl }, options);
+        routerLoaded = true;
+      }
       ('url content component pageName el componentUrl template templateUrl').split(' ').forEach(function (pageLoadProp) {
         var obj;
 
@@ -7544,17 +7647,18 @@
     return router;
   }
 
-  function clearPreviousHistory() {
+  function clearPreviousPages() {
     var router = this;
+    appRouterCheck(router, 'clearPreviousPages');
     var app = router.app;
     var separateNavbar = router.separateNavbar;
-    var url = router.history[router.history.length - 1];
-
-    var $currentPageEl = $(router.currentPageEl);
 
     var $pagesToRemove = router.$el
-      .children('.page:not(.stacked)')
-      .filter(function (index, pageInView) { return pageInView !== $currentPageEl[0]; });
+      .children('.page')
+      .filter(function (index, pageInView) {
+        if (router.currentRoute && (router.currentRoute.modal || router.currentRoute.panel)) { return true; }
+        return pageInView !== router.currentPageEl;
+      });
 
     $pagesToRemove.each(function (index, pageEl) {
       var $oldPageEl = $(pageEl);
@@ -7573,6 +7677,14 @@
         }
       }
     });
+  }
+
+  function clearPreviousHistory() {
+    var router = this;
+    appRouterCheck(router, 'clearPreviousHistory');
+    var url = router.history[router.history.length - 1];
+
+    router.clearPreviousPages();
 
     router.history = [url];
     router.view.history = [url];
@@ -7984,7 +8096,13 @@
     };
 
     Router.prototype.removePage = function removePage (el) {
+      var $el = $(el);
+      var f7Page = $el && $el[0] && $el[0].f7Page;
       var router = this;
+      if (f7Page && f7Page.route && f7Page.route.route && f7Page.route.route.keepAlive) {
+        $el.remove();
+        return;
+      }
       router.removeEl(el);
     };
 
@@ -8562,9 +8680,6 @@
         pageFrom: pageFrom,
       };
 
-      if ($navbarEl && $navbarEl[0]) {
-        $navbarEl[0].f7Page = page;
-      }
       $pageEl[0].f7Page = page;
       return page;
     };
@@ -8579,6 +8694,11 @@
       if (!$pageEl.length) { return; }
       var route = options.route;
       var restoreScrollTopOnBack = router.params.restoreScrollTopOnBack;
+      var keepAlive = $pageEl[0].f7Page && $pageEl[0].f7Page.route && $pageEl[0].f7Page.route.route && $pageEl[0].f7Page.route.route.keepAlive;
+
+      if (callback === 'beforeRemove' && keepAlive) {
+        callback = 'beforeUnmount'; // eslint-disable-line
+      }
 
       var camelName = "page" + (callback[0].toUpperCase() + callback.slice(1, callback.length));
       var colonName = "page:" + (callback.toLowerCase());
@@ -8687,12 +8807,14 @@
       $pageEl.trigger(colonName, page);
       router.emit(camelName, page);
 
-      if (callback === 'beforeRemove') {
+      if (callback === 'beforeRemove' || callback === 'beforeUnmount') {
         detachEvents();
-        if ($pageEl[0].f7Page && $pageEl[0].f7Page.navbarEl) {
-          delete $pageEl[0].f7Page.navbarEl.f7Page;
+        if (!keepAlive) {
+          if ($pageEl[0].f7Page && $pageEl[0].f7Page.navbarEl) {
+            delete $pageEl[0].f7Page.navbarEl.f7Page;
+          }
+          $pageEl[0].f7Page = null;
         }
-        $pageEl[0].f7Page = null;
       }
     };
 
@@ -8721,6 +8843,7 @@
 
     Router.prototype.updateCurrentUrl = function updateCurrentUrl (newUrl) {
       var router = this;
+      appRouterCheck(router, 'updateCurrentUrl');
       // Update history
       if (router.history.length) {
         router.history[router.history.length - 1] = newUrl;
@@ -8977,6 +9100,8 @@
   Router.prototype.backward = backward;
   Router.prototype.loadBack = loadBack;
   Router.prototype.back = back;
+  // Clear previoius pages from the DOM
+  Router.prototype.clearPreviousPages = clearPreviousPages;
   // Clear history
   Router.prototype.clearPreviousHistory = clearPreviousHistory;
 
@@ -9159,17 +9284,17 @@
 
   function initClicks(app) {
     function handleClicks(e) {
-      var clicked = $(e.target);
-      var clickedLink = clicked.closest('a');
-      var isLink = clickedLink.length > 0;
-      var url = isLink && clickedLink.attr('href');
-      var isTabLink = isLink && clickedLink.hasClass('tab-link') && (clickedLink.attr('data-tab') || (url && url.indexOf('#') === 0));
+      var $clickedEl = $(e.target);
+      var $clickedLinkEl = $clickedEl.closest('a');
+      var isLink = $clickedLinkEl.length > 0;
+      var url = isLink && $clickedLinkEl.attr('href');
+      var isTabLink = isLink && $clickedLinkEl.hasClass('tab-link') && ($clickedLinkEl.attr('data-tab') || (url && url.indexOf('#') === 0));
 
       // Check if link is external
       if (isLink) {
         // eslint-disable-next-line
-        if (clickedLink.is(app.params.clicks.externalLinks) || (url && url.indexOf('javascript:') >= 0)) {
-          var target = clickedLink.attr('target');
+        if ($clickedLinkEl.is(app.params.clicks.externalLinks) || (url && url.indexOf('javascript:') >= 0)) {
+          var target = $clickedLinkEl.attr('target');
           if (
             url
             && win.cordova
@@ -9188,7 +9313,7 @@
         var moduleClicks = app.modules[moduleName].clicks;
         if (!moduleClicks) { return; }
         Object.keys(moduleClicks).forEach(function (clickSelector) {
-          var matchingClickedElement = clicked.closest(clickSelector).eq(0);
+          var matchingClickedElement = $clickedEl.closest(clickSelector).eq(0);
           if (matchingClickedElement.length > 0) {
             moduleClicks[clickSelector].call(app, matchingClickedElement, matchingClickedElement.dataset());
           }
@@ -9199,16 +9324,16 @@
       var clickedLinkData = {};
       if (isLink) {
         e.preventDefault();
-        clickedLinkData = clickedLink.dataset();
+        clickedLinkData = $clickedLinkEl.dataset();
       }
       var validUrl = url && url.length > 0 && url !== '#' && !isTabLink;
-      if (validUrl || clickedLink.hasClass('back')) {
+      if (validUrl || $clickedLinkEl.hasClass('back')) {
         var view;
         if (clickedLinkData.view) {
           view = $(clickedLinkData.view)[0].f7View;
         } else {
-          view = clicked.parents('.view')[0] && clicked.parents('.view')[0].f7View;
-          if (!clickedLink.hasClass('back') && view && view.params.linksView) {
+          view = $clickedEl.parents('.view')[0] && $clickedEl.parents('.view')[0].f7View;
+          if (!$clickedLinkEl.hasClass('back') && view && view.params.linksView) {
             if (typeof view.params.linksView === 'string') { view = $(view.params.linksView)[0].f7View; }
             else if (view.params.linksView instanceof View) { view = view.params.linksView; }
           }
@@ -9224,7 +9349,10 @@
             // something wrong there
           }
         }
-        if (clickedLink.hasClass('back')) { view.router.back(url, clickedLinkData); }
+        if ($clickedLinkEl[0].f7RouteProps) {
+          clickedLinkData.props = $clickedLinkEl[0].f7RouteProps;
+        }
+        if ($clickedLinkEl.hasClass('back')) { view.router.back(url, clickedLinkData); }
         else { view.router.navigate(url, clickedLinkData); }
       }
     }
@@ -11154,7 +11282,16 @@
         $navbarInnerEl = $navbarInnerEl.find('.navbar-inner');
         if ($navbarInnerEl.length > 1) { return undefined; }
       }
-      return $navbarInnerEl[0].f7Page;
+      if ($navbarInnerEl.parents('.page').length) {
+        return $navbarInnerEl.parents('.page')[0];
+      }
+      var pageEl;
+      $navbarInnerEl.parents('.view').find('.page').each(function (index, el) {
+        if (el && el.f7Page && el.f7Page.navbarEl && $navbarInnerEl[0] === el.f7Page.navbarEl) {
+          pageEl = el;
+        }
+      });
+      return pageEl;
     },
     initHideNavbarOnScroll: function initHideNavbarOnScroll(pageEl, navbarInnerEl) {
       var app = this;
@@ -11218,6 +11355,7 @@
           hide: Navbar.hide.bind(app),
           show: Navbar.show.bind(app),
           getElByPage: Navbar.getElByPage.bind(app),
+          getPageByEl: Navbar.getPageByEl.bind(app),
           initHideNavbarOnScroll: Navbar.initHideNavbarOnScroll.bind(app),
         },
       });
@@ -12065,4 +12203,4 @@
 
   return Framework7;
 
-})));
+}));

@@ -5,9 +5,11 @@ import Device from '../../utils/device';
 import History from '../../utils/history';
 import redirect from './redirect';
 import processRouteQueue from './process-route-queue';
+import appRouterCheck from './app-router-check';
 
 function backward(el, backwardOptions) {
   const router = this;
+  const $el = $(el);
   const app = router.app;
   const view = router.view;
 
@@ -19,7 +21,7 @@ function backward(el, backwardOptions) {
   const dynamicNavbar = router.dynamicNavbar;
   const separateNavbar = router.separateNavbar;
 
-  const $newPage = $(el);
+  const $newPage = $el;
   const $oldPage = router.$el.children('.page-current');
 
   if ($newPage.length) {
@@ -57,6 +59,13 @@ function backward(el, backwardOptions) {
   // Remove theme elements
   router.removeThemeElements($newPage);
 
+  // Save Keep Alive Cache
+  if (options.route && options.route.route && options.route.route.keepAlive && !options.route.route.keepAliveData) {
+    options.route.route.keepAliveData = {
+      pageEl: $el[0],
+    };
+  }
+
   // New Page
   $newPage
     .addClass('page-previous')
@@ -71,7 +80,6 @@ function backward(el, backwardOptions) {
       .removeClass('stacked')
       .removeAttr('aria-hidden');
   }
-
 
   // Remove previous page in case of "forced"
   let backIndex;
@@ -159,6 +167,9 @@ function backward(el, backwardOptions) {
       }
     }
     if (!newPageInDom) {
+      router.pageCallback('mounted', $newPage, $newNavbarInner, 'previous', 'current', options, $oldPage);
+    } else if (options.route && options.route.route && options.route.route.keepAlive && !$newPage[0].f7PageMounted) {
+      $newPage[0].f7PageMounted = true;
       router.pageCallback('mounted', $newPage, $newNavbarInner, 'previous', 'current', options, $oldPage);
     }
   }
@@ -428,10 +439,7 @@ function back(...args) {
   }
 
   const app = router.app;
-  if (!router.view) {
-    app.views.main.router.back(...args);
-    return router;
-  }
+  appRouterCheck(router, 'back');
 
   let currentRouteIsModal = router.currentRoute.modal;
   let modalType;
@@ -471,16 +479,29 @@ function back(...args) {
         },
       };
     }
-    if (!previousRoute || !modalToClose) {
-      return router;
+    if (!navigateUrl || navigateUrl.replace(/[# ]/g, '').trim().length === 0) {
+      if (!previousRoute || !modalToClose) {
+        return router;
+      }
     }
-    if (router.params.pushState && navigateOptions.pushState !== false) {
-      History.back();
+    const forceOtherUrl = navigateOptions.force && previousRoute && navigateUrl;
+    if (previousRoute && modalToClose) {
+      if (router.params.pushState && navigateOptions.pushState !== false) {
+        History.back();
+      }
+      router.currentRoute = previousRoute;
+      router.history.pop();
+      router.saveHistory();
+      router.modalRemove(modalToClose);
+      if (forceOtherUrl) {
+        router.navigate(navigateUrl, { reloadCurrent: true });
+      }
+    } else if (modalToClose) {
+      router.modalRemove(modalToClose);
+      if (navigateUrl) {
+        router.navigate(navigateUrl, { reloadCurrent: true });
+      }
     }
-    router.currentRoute = previousRoute;
-    router.history.pop();
-    router.saveHistory();
-    router.modalRemove(modalToClose);
     return router;
   }
   const $previousPage = router.$el.children('.page-current').prevAll('.page-previous').eq(0);
@@ -548,10 +569,11 @@ function back(...args) {
 
   const options = {};
   if (route.route.options) {
-    Utils.extend(options, route.route.options, navigateOptions, { route });
+    Utils.extend(options, route.route.options, navigateOptions);
   } else {
-    Utils.extend(options, navigateOptions, { route });
+    Utils.extend(options, navigateOptions);
   }
+  options.route = route;
 
   if (options && options.context) {
     route.context = options.context;
@@ -572,6 +594,10 @@ function back(...args) {
   }
   function resolve() {
     let routerLoaded = false;
+    if (route.route.keepAlive && route.route.keepAliveData) {
+      router.loadBack({ el: route.route.keepAliveData.pageEl }, options);
+      routerLoaded = true;
+    }
     ('url content component pageName el componentUrl template templateUrl').split(' ').forEach((pageLoadProp) => {
       if (route.route[pageLoadProp] && !routerLoaded) {
         routerLoaded = true;
