@@ -26,7 +26,7 @@ var mainView = app.views.create('.view-main');
 
 // Handle Cordova Device Ready Event
 $$(document).on('deviceready', function() {
-    console.log("Device is ready!");
+    console.log("Device is ready!!!!!");
 });
 
 // Option 1. Using one 'page:init' handler for all pages
